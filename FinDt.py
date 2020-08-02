@@ -17,9 +17,10 @@ import locale
 locale.setlocale(locale.LC_ALL, '')
 from datetime import date, timedelta
 from collections import OrderedDict
+from pathlib import Path
 
 __author__ = """\n""".join(['Marcelo G Facioli (mgfacioli@yahoo.com.br)'])
-__version__ = "3.0.0"
+__version__ = "3.0.4"
 
 
 class FormataData(object):
@@ -99,21 +100,21 @@ class DatasFinanceiras(FormataData):
 
         Parametros
         ----------
-            Data_Inicio - (OBRIGATORIO) cadeia de caracteres (string) que representa uma data no formato "xx/xx/xxxx";
+            data_inicio - (OBRIGATORIO) cadeia de caracteres (string) que representa uma data no formato "xx/xx/xxxx";
                 a data inicial do periodo desejado (inclusive).
 
-            Data_Fim - (OPICIONAL) cadeia de caracteres (string) que representa uma data no formato "xx/xx/xxxx";
+            data_fim - (OPICIONAL) cadeia de caracteres (string) que representa uma data no formato "xx/xx/xxxx";
                 a data final do periodo desejado (exclusive).
 
-            Num_Dias - (OPICIONAL) numero inteiro que representa o numero de dias desejados, em substituicao ao
+            num_dias - (OPICIONAL) numero inteiro que representa o numero de dias desejados, em substituicao ao
                 argumento Data_Fim.
 
-            Path_Arquivo - (OPCIONAL/OBRIGATORIO) - seu uso e opcional para as opcoes 1 e 2 e obrigatorio para a opcao 3
-            (nesta opcao, o arquivo contendo os feriados sera necessario para a correta execucao da funcao. Portanto,
-            quando cPath_Arquivo for obrigatorio, sera a cadeia de caracteres(string) representando o caminho (path)
-            para o arquivo tipo csv contendo os feriados nacionais, no formato (c:\\foo).
+            path_arquivo - (OPCIONAL/OBRIGATORIO) - seu uso é opcional para as opções 1 e 2 e obrigatório para a opção 3
+            (nesta opção, o arquivo contendo os feriados será necessário para a correta execucão da funcão. Portanto,
+            quando path_arquivo for obrigatório, será a cadeia de caracteres(string) representando o caminho (path)
+            para o arquivo tipo csv contendo os feriados nacionais, no formato (c:\\foo\\arquivo.csv).
             O arquivo deve estar no formato csv, com as colunas um, dois e tres contendo, respectivamente, data,
-            dia_da_semana e descricao do feriado - dar preferencia para o arquivo da 'Anbima'
+            dia_da_semana e descricão do feriado - dar preferencia para o arquivo da 'Anbima'
             (site 'http://portal.anbima.com.br/informacoes-tecnicas/precos/feriados-bancarios/Pages/default.aspx')
             o qual vem no formato xls (Excel) e que pode ser facilmente convertido para o formato csv, a partir do menu
              "Salvar como" e escolhendo-se como Tipo "CSV - separado por virgula" a partir do Excel.
@@ -123,127 +124,163 @@ class DatasFinanceiras(FormataData):
 
         Exemplos
         --------
-            1)
-                Criando variaveis auxiliares:
 
-                    >>> varPath= "C:\\foo\\feriados.csv"
-                    >>> dtIni = "01/01/2013"
-                    >>> dtFin = "28/02/2013"
+            1- Criando variaveis auxiliares:
 
-                Criando um instancia da classe DatasFinanceiras:
+                >>> var_path= "C:\\foo\\feriados.csv"
+                >>> dt_ini = "01/01/2013"
+                >>> dt_fin = "28/02/2013"
 
-                    >>> a = DatasFinanceiras(dtIni, dtFin, Path_Arquivo=varPath)
 
-                Gerando uma lista de dias da data inicial ate final:
+            2- Criando um instancia da classe DatasFinanceiras:
 
-                    >>> a.Dias()
+                >>> import FinDt
+                >>> periodo = FinDt.DatasFinanceiras(dt_ini, dt_fin, path_arquivo = var_path)
 
-                Gerando uma lista de dias sem sabados e domingos da data inicial ate final:
 
-                    >>> a.Dias(Opt=2)
+            3- Gerando uma lista de dias do periodo:
+                - formato datetime.date(aaaa, mm, dd):
 
-                Gerando uma lista de dias sem sabados, domingos e feriados da data inicial ate final:
+                    >>> periodo.dias()          # dias corridos
+                    >>> periodo.dias(opt=2)     # sem sabados e domingos
+                    >>> periodo.dias(2)         # sem sabados e domingos
+                    >>> periodo.dias(opt=3)     # sem sabados, domingos e feriados
+                    >>> periodo.dias(3)         # sem sabados, domingos e feriados
+            ou
+                - formato string 'dd/mm/aaaa'
 
-                    >>> a.Dias(Opt=3)
+                    >>> periodo.dias(1, 'str')      # dias corridos
+                    >>> periodo.dias(2, 'str')      # sem sabados e domingos
+                    >>> periodo.dias(3, 'str')      # sem sabados, domingos e feriados
 
-                                Obtendo um dicionario ordenado 'Mes/Ano':(Dias Uteis por Mes)
 
-                                        >>> a.DiasUteisPorMes()
+            4- Obtendo um dicionário ordenado contendo todos os feriados do periodo:
+                (key : value = data : feriado)
 
-                                Criando uma lista de todas terca-feiras entre dtIni e dtFim:
+                >>> periodo.lista_feriados()        # formato datetime.date(aaaa, mm, dd)
+            ou
+                >>> periodo.lista_feriados('str')   # formato string 'dd/mm/aaaa'
 
-                                        >>> a.ListaDiaEspecificoSemana(3)
 
-                                Obtendo o dia da semana em que determinada data ira cair (mesmo com tal data nao
-                                    estando entre dtIni e dtFim):
+            5- Obtendo o dia da semana em que determinada data ira cair (mesmo com tal data nao
+                estando no periodo):
 
-                                        >>> a.DiaSemana('03/04/2013')
+                    >>> periodo.dia_semana('03/04/2013')
 
-                                        Resultado: 'quarta-feira'
+                    Resultado: 'quarta-feira'
 
-                Gerando uma lista que representa um subperiodo de dias de DatasFinanceiras:
 
-                    >>> a.subperiodo('15/01/2013', '15/02/2013')
+            6- Criando uma lista de todas terca-feiras do periodo:
 
+                >>> periodo.lista_dia_especifico_semana(3)           # formato datetime.date(aaaa, mm, dd)
+            ou
+                >>> periodo.lista_dia_especifico_semana(3, 'str')   # formato string 'dd/mm/aaaa'
+
+
+            7- Obtendo o primeiro ou o último dia de determinado mês:
+                >>> periodo.primeiro_dia_mes('23/02/2015')  # formato datetime.date(aaaa, mm, dd)
+            ou
+                >>> periodo.ultimo_dia_mes('23/02/2015', 'str')  # formato string 'dd/mm/aaaa'
+
+
+            8- Gerando uma lista que representa um subperiodo de dias de DatasFinanceiras:
+
+                >>> periodo.subperiodo('15/01/2013', '15/02/2013')
+
+            9- Obtendo um dicionario ordenado 'Mes/Ano':
+                (key : value = (Mes/Ano) : (dias uteis por mes))
+
+               >>> periodo.dias_uteis_por_mes()
     """
 
-    def __init__(self, data_inicio=None, data_fim=None, num_dias=None, opt=1, path_arquivo=''):
+    def __init__(self, data_inicio=None, data_fim=None, num_dias=None, path_arquivo=''):
         super().__init__()
         if data_inicio is None:
             raise ValueError('A Data Inicial e imprescindivel!!!')
         else:
             self._cData_Inicio = FormataData(data_inicio).str_para_data()
-        if data_fim is None and num_dias is None:
-            raise ValueError("Uma data final ou número de dias tem que ser fornecido!")
-        else:
-            self._cData_Fim = FormataData(data_fim).str_para_data()
-            self._cNum_Dias = num_dias
-        self._cPath_Arquivo = path_arquivo
-        self._ListaDatas = []
 
-    @staticmethod
-    def __lista_dias(a, b, c):
-        """
-        Este método permite gerar todas as datas contidas no periodo selecionado, dia a dia.
-        :rtype : list
-        """
-        return [FormataData(a + timedelta(x)).str_para_data() for x in range(b, abs(c))]
+            if data_fim is None and num_dias is None:
+                raise ValueError("Uma data final ou número de dias tem que ser fornecido!")
+            else:
+                if data_fim is not None:
+                    self._cData_Fim = FormataData(data_fim).str_para_data()
+                    self._ListaDatas = [self._cData_Inicio + timedelta(x)
+                                        for x in range(0, abs(int((self._cData_Fim - self._cData_Inicio).days) + 1))]
+                elif num_dias is not None:
+                    self._cNum_Dias = num_dias
+                    if self._cNum_Dias >= 1:
+                        self._ListaDatas = [self._cData_Inicio + timedelta(x) for x in range(0, abs(self._cNum_Dias))]
+                    else:
+                        self._ListaDatas = [
+                            (self._cData_Inicio - timedelta(days=abs(self._cNum_Dias) - 1) + timedelta(x))
+                            for x in range(0, abs(self._cNum_Dias))]
+                    self._cData_Fim = self._ListaDatas[-1]
+        self._cPath_Arquivo = Path(path_arquivo)
 
-    def dias(self, opt=1):
+    def dias(self, opt=1, dt_type='date'):
         """
         Cria uma lista de Dias entre uma data inicial e uma data final.
 
         Parametros
         ----------
-            Opt - (OPICIONAL) Permite selecionar entre 3 opcoes para gerar a lista de dias:
+            opt - (OPICIONAL) Permite selecionar entre 3 opcoes para gerar a lista de dias:
                 Opcao 1: gera uma lista de dias corridos (incluindo sabados, domingos e feriados).
                 Opcao 2: gera uma lista de dias excluindo sabados e domingos.
                 Opcao 3: gera uma lista de dias excluindo sabados e domingos e feriados.
+
+            dt_type - (OPICIONAL) Permite determinar o tipo de dados que será retornado:
+                Opção date: retorna datas no formato datetime.date(aaaa, mm, dd) do python
+                Opção str:  retorna datas no formato string "dd/mm/aaaa"
         """
 
-        if self._cData_Fim is not None:
-            self._ListaDatas = self.__lista_dias(self._cData_Inicio, 0,
-                                                 int((self._cData_Fim - self._cData_Inicio).days) + 1)
-        else:
-            if self._cNum_Dias >= 1:
-                self._ListaDatas = self.__lista_dias(self._cData_Inicio, 0, self._cNum_Dias)
-            else:
-                self._ListaDatas = self.__lista_dias(self._cData_Inicio - timedelta(days=abs(self._cNum_Dias) - 1),
-                                                     0, self._cNum_Dias)
+        if dt_type == 'date':
+            if opt == 1:
+                return [dia for dia in self._ListaDatas]
+            elif opt == 2:
+                return [dia for dia in self._ListaDatas if
+                        (dia.isoweekday() != 6 and dia.isoweekday() != 7)]
+            elif opt == 3:
+                if self._cPath_Arquivo is None:
+                    raise ValueError('E necessario um path/arquivo!')
+                else:
+                    return [dia for dia in self.dias(opt=2) if
+                            dia not in self.lista_feriados()]
+        elif dt_type == 'str':
+            return [FormataData(dia).data_para_str() for dia in self.dias(opt, dt_type='date')]
 
-        if opt == 1:
-            return [FormataData(dia).data_para_str() for dia in self._ListaDatas]
-        elif opt == 2:
-            return [FormataData(dia).data_para_str() for dia in self._ListaDatas if
-                    (dia.isoweekday() != 6 and dia.isoweekday() != 7)]
-        elif opt == 3:
-            if self._cPath_Arquivo is None:
-                raise ValueError('E necessario um path/arquivo!')
-            else:
-                if self._cData_Fim is None and self._cNum_Dias >= 1:
-                    self._cData_Fim = self._ListaDatas[-1]
-                return [dia for dia in self.dias(opt=2) if
-                        FormataData(dia).data_para_str() not in self.lista_feriados()]
-
-    def lista_feriados(self):
+    def lista_feriados(self, dt_type='date'):
         """
-        Cria um Dicionario com os feriados entre a Data Inicial e a Data Final.
+        Cria um Dicionario ou uma Lista com os feriados entre a Data Inicial e a Data Final.
 
+        Parametros
+        ----------
+            opt - (OPICIONAL) Permite selecionar entre 2 opcoes para gerar a lista de dias:
+                Opcao 1: gera uma lista de dias corridos (incluindo sabados, domingos e feriados).
+                Opcao 2: gera uma lista de dias excluindo sabados e domingos.
+                Opcao 3: gera uma lista de dias excluindo sabados e domingos e feriados.
+
+            dt_type - (OPICIONAL) Permite determinar o tipo de dados que será retornado:
+                Opção date: retorna datas no formato datetime.date(aaaa, mm, dd) do python
+                Opção str:  retorna datas no formato string "dd/mm/aaaa"
         """
         try:
-            with open(self._cPath_Arquivo, 'rU') as csvfile:
+            with open(self._cPath_Arquivo, 'r', encoding="ISO-8859-1") as csvfile:
                 feriados = csv.reader(csvfile, dialect='excel', delimiter=';')
                 dic_selic = {FormataData(row[0]).str_para_data(): row[2] for row in feriados}
 
-            return OrderedDict(sorted({FormataData(dt).data_para_str(): dic_selic[dt] for dt in self._ListaDatas if
-                                       dt in dic_selic}.items(), key=lambda t: t[0]))
-
+            if dt_type == 'date':
+                return OrderedDict(sorted({dt: dic_selic[dt] for dt in self._ListaDatas if
+                                           dt in dic_selic}.items(), key=lambda t: t[0]))
+            elif dt_type == 'str':
+                return OrderedDict(sorted({FormataData(dt).data_para_str(): dic_selic[dt] for dt in self._ListaDatas if
+                                           dt in dic_selic}.items(), key=lambda t: t[0]))
         except IOError as IOerr:
             print("Erro de leitura do arquivo:" + str(IOerr))
         except KeyError as Kerr:
             print("Erro na chave do Dicionario" + str(Kerr))
 
-    def lista_dia_especifico_semana(self, dia_da_semana=1):
+    def lista_dia_especifico_semana(self, dia_da_semana=1, dt_type='date'):
         """
         Cria uma Lista com os dias em que um determinado dia da semana se repete entre a Data Inicial e a Data Final.
 
@@ -257,8 +294,15 @@ class DatasFinanceiras(FormataData):
                 Sexta-Feira = 5
                 Sabado = 6
                 Domingo = 7
+
+            dt_type - (OPICIONAL) Permite determinar o tipo de dados que será retornado:
+                Opção date: retorna datas no formato datetime.date(aaaa, mm, dd) do python
+                Opção str:  retorna datas no formato string "dd/mm/aaaa"
         """
-        return [FormataData(dia).data_para_str() for dia in self._ListaDatas if dia.isoweekday() == dia_da_semana]
+        if dt_type == 'date':
+            return [dia for dia in self._ListaDatas if dia.isoweekday() == dia_da_semana]
+        elif dt_type == 'str':
+            return [FormataData(dia).data_para_str() for dia in self._ListaDatas if dia.isoweekday() == dia_da_semana]
 
     @staticmethod
     def dia_semana(data):
@@ -266,38 +310,50 @@ class DatasFinanceiras(FormataData):
         Obtem o dia da semana a partir de uma data no formato String
 
         Parametros
-            Data - cadeia de caracteres (string) que representa uma data no formato "xx/xx/xxxx"
+            data - cadeia de caracteres (string) que representa uma data no formato "xx/xx/xxxx"
         """
         return FormataData(data).str_para_data().strftime("%A")
 
     @staticmethod
-    def primeiro_dia_mes(data):
+    def primeiro_dia_mes(data, dt_type='date'):
         """
         Fornecida uma data qualquer no formato string, retorna o primeiro dia do mes daquela data, tambem
             no formato string.
 
         Parametros
         ----------
-            Data - a data para a qual se deseja obeter o ultimo dia do mes (formato string).
+            data - a data para a qual se deseja obeter o ultimo dia do mes (formato string).
+
+            dt_type - (OPICIONAL) Permite determinar o tipo de dados que será retornado:
+                Opção date: retorna datas no formato datetime.date(aaaa, mm, dd) do python
+                Opção str:  retorna datas no formato string "dd/mm/aaaa"
         """
-        return FormataData(data).str_para_data().strftime("01/%m/%Y")
+        if dt_type == 'date':
+            return FormataData(FormataData(data).str_para_data().strftime("01/%m/%Y")).str_para_data()
+        elif dt_type == 'str':
+            return FormataData(data).str_para_data().strftime("01/%m/%Y")
 
     @staticmethod
-    def ultimo_dia_mes(data):
+    def ultimo_dia_mes(data, dt_type='date'):
         """
         Fornecida uma data qualquer no formato string, retorna o ultimo dia do mes daquela data, tambem
             no formato string.
 
         Parametros
         ----------
-            Data - a data para a qual se deseja obeter o ultimo dia do mes (formato string).
-        """
+            data - a data para a qual se deseja obeter o ultimo dia do mes (formato string).
 
+            dt_type - (OPICIONAL) Permite determinar o tipo de dados que será retornado:
+                Opção date: retorna datas no formato datetime.date(aaaa, mm, dd) do python
+                Opção str:  retorna datas no formato string "dd/mm/aaaa"
+        """
         data_seguinte = FormataData(data).str_para_data()
         while data_seguinte.month == FormataData(data).str_para_data().month:
             data_seguinte = date.fromordinal(data_seguinte.toordinal() + 1)
-
-        return FormataData(date.fromordinal(data_seguinte.toordinal() - 1)).data_para_str()
+        if dt_type == 'date':
+            return date.fromordinal(data_seguinte.toordinal() - 1)
+        elif dt_type == 'str':
+            return FormataData(date.fromordinal(data_seguinte.toordinal() - 1)).data_para_str()
 
     def dias_uteis_por_mes(self):
         """
@@ -309,15 +365,26 @@ class DatasFinanceiras(FormataData):
         lista_mes_dias_uteis = []
 
         for dia in self._ListaDatas:
-            if FormataData(dia).data_para_str() == self.ultimo_dia_mes(dia):
-                dias_uteis_do_mes = DatasFinanceiras(self.primeiro_dia_mes(dia), self.ultimo_dia_mes(dia), opt=3,
-                            path_arquivo=self._cPath_Arquivo)
+            if dia == self.ultimo_dia_mes(dia):
+                if self.primeiro_dia_mes(dia) < self._cData_Inicio:
+                    dias_uteis_do_mes = DatasFinanceiras(self._cData_Inicio, self.ultimo_dia_mes(dia, 'str'),
+                                                         path_arquivo=self._cPath_Arquivo)
+                    lista_mes_dias_uteis.append(
+                        ("{}".format(dia.strftime("%m/%Y")), len(dias_uteis_do_mes.dias(opt=3))))
+                else:
+                    dias_uteis_do_mes = DatasFinanceiras(self.primeiro_dia_mes(dia, 'str'),
+                            self.ultimo_dia_mes(dia, 'str'), path_arquivo=self._cPath_Arquivo)
+                    lista_mes_dias_uteis.append(
+                        ("{}".format(dia.strftime("%m/%Y")), len(dias_uteis_do_mes.dias(opt=3))))
+            elif dia == self._cData_Fim:
+                dias_uteis_do_mes = DatasFinanceiras(self.primeiro_dia_mes(dia, 'str'), self._cData_Fim,
+                                                     path_arquivo=self._cPath_Arquivo)
                 lista_mes_dias_uteis.append(
                     ("{}".format(dia.strftime("%m/%Y")), len(dias_uteis_do_mes.dias(opt=3))))
 
         return OrderedDict(sorted({per[0]: per[1] for per in lista_mes_dias_uteis}.items(), key=lambda t: t[0]))
 
-    def subperiodo(self, data_inicio=None, data_fim=None, num_dias=1, opt=1):
+    def subperiodo(self, data_inicio=None, data_fim=None, num_dias=1, dt_type='date'):
         """
 
         Cria uma lista contendo um subperiodo de dias do periodo principal.
@@ -333,19 +400,34 @@ class DatasFinanceiras(FormataData):
 
         Parametros
         ----------
-        Os mesmos da Classe DatasFinanceiras.
+            data_inicio - (OBRIGATORIO) cadeia de caracteres (string) que representa uma data no formato "xx/xx/xxxx";
+                a data inicial do periodo desejado (inclusive).
+
+            data_fim - (OPICIONAL) cadeia de caracteres (string) que representa uma data no formato "xx/xx/xxxx";
+                a data final do periodo desejado (exclusive).
+
+            num_dias - (OPICIONAL) numero inteiro que representa o numero de dias desejados, em substituicao ao
+                argumento Data_Fim.
+
+            dt_type - (OPICIONAL) Permite determinar o tipo de dados que será retornado:
+                Opção date: retorna datas no formato datetime.date(aaaa, mm, dd) do python
+                Opção str:  retorna datas no formato string "dd/mm/aaaa"
+
         """
         if data_inicio is None or data_fim is None:
-            subper = DatasFinanceiras(self._cData_Inicio, self._cData_Fim, self._cNum_Dias, opt,
+            subper = DatasFinanceiras(self._cData_Inicio, self._cData_Fim, self._cNum_Dias,
                                       path_arquivo=self._cPath_Arquivo)
-            return subper.dias(opt)
+            return subper.dias(1, dt_type)
         else:
-            if data_inicio in self.dias() or data_fim in self.dias():
-                subper = DatasFinanceiras(data_inicio, data_fim, num_dias, opt, path_arquivo=self._cPath_Arquivo)
-                return subper.dias(opt)
+            if FormataData(data_inicio).str_para_data() in self._ListaDatas:
+                print("")
+                if FormataData(data_fim).str_para_data() in self._ListaDatas:
+                    subper = DatasFinanceiras(data_inicio, data_fim, path_arquivo=self._cPath_Arquivo)
+                    return subper.dias(1, dt_type)
+                else:
+                    raise ValueError("Data Final do subperiodo fora do conjunto de dias do periodo principal!")
             else:
-                raise ValueError('Subperiodo fora da range do periodo!')
-                pass
+                raise ValueError("Data Inicial do subperiodo fora do conjunto de dias do periodo principal!")
 
 
 def main():
